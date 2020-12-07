@@ -41,19 +41,19 @@ def scan_bags(input_file):
     bags = {}
     bag_pattern = re.compile(r'(\d+ )?(\w+) (\w+) bags?')
     for line in input_file:
-        bag, other_bags = line.strip().split(' contain ')
-        if other_bags == 'no other bags.':
-            other_bags = []
+        out_bag, in_bags = line.strip().split(' contain ')
+        if in_bags == 'no other bags.':
+            in_bags = []
         else:
-            other_bags = other_bags[:-1].split(', ')
+            in_bags = in_bags[:-1].split(', ')
 
-        count, modifier, color = bag_pattern.fullmatch(bag).groups()
-        key = (modifier, color)
-        assert key not in bags
-        bags[key] = []
-        for bag in other_bags:
-            count, modifier, color = bag_pattern.fullmatch(bag).groups()
-            bags[key].append((int(count), (modifier, color)))
+        count, modifier, color = bag_pattern.fullmatch(out_bag).groups()
+        out_bag = (modifier, color)
+        assert out_bag not in bags
+        bags[out_bag] = []
+        for in_bag in in_bags:
+            count, modifier, color = bag_pattern.fullmatch(in_bag).groups()
+            bags[out_bag].append((int(count), (modifier, color)))
 
     return bags
 
