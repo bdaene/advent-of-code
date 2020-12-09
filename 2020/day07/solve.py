@@ -21,20 +21,10 @@ def part_1(bags):
 
 
 def part_2(bags):
-    stack = [('shiny', 'gold')]
-    seen_bags = {}
-    while stack:
-        out_bag = stack.pop()
-        if out_bag in seen_bags:
-            if seen_bags[out_bag] is None:
-                seen_bags[out_bag] = sum(count * (1 + seen_bags[in_bag]) for count, in_bag in bags[out_bag])
-        else:
-            seen_bags[out_bag] = None
-            stack.append(out_bag)
-            for count, in_bag in bags[out_bag]:
-                stack.append(in_bag)
+    def size(out_bag):
+        return sum(count * (1 + size(in_bag)) for count, in_bag in bags[out_bag])
 
-    print(seen_bags[('shiny', 'gold')])
+    print(size(('shiny', 'gold')))
 
 
 def scan_bags(input_file):
