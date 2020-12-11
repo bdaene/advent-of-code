@@ -2,6 +2,8 @@ from collections import defaultdict, Counter
 from itertools import product
 from time import perf_counter
 
+import numpy
+
 
 def timeit(func):
     def wrapper(*args, **kwargs):
@@ -174,10 +176,37 @@ def part_2_bis(seats):
     return sum(1 for seat in seats if seats[seat])
 
 
+@timeit
+def part_1_bis(seats):
+    seats = list(list(row) for row in seats)
+    seats = (numpy.array(seats) == 'L')
+
+    occupied_seats = numpy.zeros(seats.shape, dtype=bool)
+
+    while True:
+        count = numpy.zeros(seats.shape, dtype=int)
+        count[:-1, :-1] += occupied_seats[1:, 1:]
+        count[:-1, 1:] += occupied_seats[1:, :-1]
+        count[1:, :-1] += occupied_seats[:-1, 1:]
+        count[1:, 1:] += occupied_seats[:-1, :-1]
+        count[:, :-1] += occupied_seats[:, 1:]
+        count[:, 1:] += occupied_seats[:, :-1]
+        count[1:, :] += occupied_seats[:-1, :]
+        count[:-1, :] += occupied_seats[1:, :]
+
+        occupied_seats_ = seats & ((occupied_seats & (count < 4)) | ~occupied_seats & (count == 0))
+        if (occupied_seats_ == occupied_seats).all():
+            break
+        occupied_seats = occupied_seats_
+
+    return occupied_seats.sum()
+
+
 def main():
     seats = get_seats()
-    part_1(seats)
-    part_2(seats)
+    part_1_bis(seats)
+    # part_1(seats)
+    # part_2(seats)
     part_2_bis(seats)
 
 
