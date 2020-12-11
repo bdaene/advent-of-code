@@ -125,10 +125,60 @@ def part_2(seats):
     return Counter(seats.values())['#']
 
 
+@timeit
+def part_2_bis(seats):
+    rows = range(0, len(seats))
+    cols = range(0, len(seats[0]))
+    seats = {(row, col): False for row, col in product(rows, cols) if seats[row][col] == 'L'}
+
+    def get_neighbors(row, col):
+        neighbors = set()
+        for dr, dc in directions:
+            r, c = row + dr, col + dc
+            while r in rows and c in cols and (r, c) not in seats:
+                r += dr
+                c += dc
+            if r in rows and c in cols:
+                neighbors.add((r, c))
+        return frozenset(neighbors)
+
+    neighbors = {seat: get_neighbors(*seat) for seat in seats}
+    # print(neighbors)
+    seats_to_verify = seats
+
+    def show():
+        print('\n'.join(''.join(('#' if seats[(row, col)] else 'L') if (row, col) in seats else '.'
+                                for col in cols)
+                        for row in rows))
+        print(seats_to_verify)
+
+    # show()
+
+    while seats_to_verify:
+        calculated_seats = {seat: sum(1 for neighbor in neighbors[seat] if seats[neighbor]) for seat in
+                            seats_to_verify}
+
+        seats_to_verify = set()
+        for seat, count in calculated_seats.items():
+            if seats[seat]:
+                if count >= 5:
+                    seats[seat] = False
+                    seats_to_verify |= neighbors[seat]
+            else:
+                if count == 0:
+                    seats[seat] = True
+                    seats_to_verify |= neighbors[seat]
+
+        # show()
+
+    return sum(1 for seat in seats if seats[seat])
+
+
 def main():
     seats = get_seats()
     part_1(seats)
     part_2(seats)
+    part_2_bis(seats)
 
 
 if __name__ == "__main__":
