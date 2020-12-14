@@ -44,6 +44,7 @@ def part_1(data):
         else:
             raise RuntimeError("Unknown action")
 
+    print(len(memory))
     return sum(memory.values())
 
 
@@ -74,13 +75,56 @@ def part_2(data):
         else:
             raise RuntimeError("Unknown action")
 
+    print(len(memory))
     return sum(memory.values())
+
+
+@timeit
+def part_2_bis(data, size=36):
+    memory = {}
+
+    mask = '0' * size
+
+    for action in data:
+        if action[0] == 'mask':
+            mask = action[1]
+            continue
+
+        address, value = action[1:]
+        address_ = []
+        for m in reversed(mask):
+            address, bit = divmod(address, 2)
+            if m == '0':
+                address_.append('0' if bit == 0 else '1')
+            else:
+                address_.append(m)
+        address = ''.join(address_)
+
+        for add in tuple(memory):
+            if any(a != b and a != 'X' and b != 'X' for a, b in zip(add, address)):
+                continue  # No conflict
+
+            val = memory.pop(add)
+            for i, b in enumerate(address):
+                if add[i] == b or b == 'X':
+                    continue
+                add_0 = add[:i] + address[i] + add[i + 1:]
+                add_1 = add[:i] + ('1' if address[i] == '0' else '0') + add[i + 1:]
+
+                memory[add_1] = val
+                add = add_0
+
+        memory[address] = value
+
+    print(len(memory))
+    return sum(value * 2 ** (address.count('X')) for address, value in memory.items())
 
 
 def main():
     data = get_data()
     part_1(data)
     part_2(data)
+    part_2_bis(data)
 
 
 if __name__ == "__main__":
