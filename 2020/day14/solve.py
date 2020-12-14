@@ -79,6 +79,17 @@ def part_2(data):
     return sum(memory.values())
 
 
+def apply_mask(address, mask):
+    address_ = []
+    for m in reversed(mask):
+        address, bit = divmod(address, 2)
+        if m == '0':
+            address_.append('0' if bit == 0 else '1')
+        else:
+            address_.append(m)
+    return ''.join(address_)
+
+
 @timeit
 def part_2_bis(data, size=36):
     memory = {}
@@ -91,14 +102,7 @@ def part_2_bis(data, size=36):
             continue
 
         address, value = action[1:]
-        address_ = []
-        for m in reversed(mask):
-            address, bit = divmod(address, 2)
-            if m == '0':
-                address_.append('0' if bit == 0 else '1')
-            else:
-                address_.append(m)
-        address = ''.join(address_)
+        address = apply_mask(address, mask)
 
         for add in tuple(memory):
             if any(a != b and a != 'X' and b != 'X' for a, b in zip(add, address)):
@@ -120,11 +124,74 @@ def part_2_bis(data, size=36):
     return sum(value * 2 ** (address.count('X')) for address, value in memory.items())
 
 
+@timeit
+def part_2_ter(data, size=36):
+    memory = {}
+    mask = '0' * size
+
+    used_addresses = {}
+
+    def add_address(address):
+        node = used_addresses
+        for a in address:
+            if a not in node:
+                node[a] = {}
+            node = node[a]
+        node[address] = '$'
+
+    def get_addresses(address):
+        stack = [used_addresses]
+        for a in address:
+            stack_ = []
+            for node in stack:
+                if a == 'X':
+                    stack_.extend(node.values())
+                else:
+                    if a in node:
+                        stack_.append(node[a])
+                    if 'X' in node:
+                        stack_.append(node['X'])
+            stack = stack_
+        addresses = []
+        for node in stack:
+            addresses.extend(node)
+        return addresses
+
+    for action in data:
+        if action[0] == 'mask':
+            mask = action[1]
+            continue
+
+        address, value = action[1:]
+        address = apply_mask(address, mask)
+
+        for add in get_addresses(address):
+            if add not in memory:
+                continue
+            val = memory.pop(add)
+            for i, b in enumerate(address):
+                if add[i] == b or b == 'X':
+                    continue
+                add_0 = add[:i] + address[i] + add[i + 1:]
+                add_1 = add[:i] + ('1' if address[i] == '0' else '0') + add[i + 1:]
+
+                memory[add_1] = val
+                add_address(add_1)
+                add = add_0
+
+        memory[address] = value
+        add_address(address)
+
+    print(len(memory))
+    return sum(value * 2 ** (address.count('X')) for address, value in memory.items())
+
+
 def main():
     data = get_data()
     part_1(data)
     part_2(data)
     part_2_bis(data)
+    part_2_ter(data)
 
 
 if __name__ == "__main__":
