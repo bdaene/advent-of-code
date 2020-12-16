@@ -1,19 +1,8 @@
 from collections import defaultdict, Counter
-from itertools import product
-from time import perf_counter
 
 import numpy
-
-
-def timeit(func):
-    def wrapper(*args, **kwargs):
-        clock = perf_counter()
-        result = func(*args, **kwargs)
-        print(f"Execution of {func.__name__} took {(perf_counter() - clock) * 1000:.3f}ms.")
-        print(f"Result: {result}")
-        return result
-
-    return wrapper
+from itertools import product
+from utils import timeit
 
 
 @timeit
@@ -205,8 +194,8 @@ def part_1_bis(seats):
 def main():
     seats = get_seats()
     part_1_bis(seats)
-    # part_1(seats)
-    # part_2(seats)
+    part_1(seats)
+    part_2(seats)
     part_2_bis(seats)
 
 

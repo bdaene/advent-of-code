@@ -1,16 +1,6 @@
 import re
-from time import perf_counter
 
-
-def timeit(func):
-    def wrapper(*args, **kwargs):
-        clock = perf_counter()
-        result = func(*args, **kwargs)
-        print(f"Execution of {func.__name__} took {(perf_counter() - clock) * 1000:.3f}ms.")
-        print(f"Result: {result}")
-        return result
-
-    return wrapper
+from utils import timeit
 
 
 @timeit

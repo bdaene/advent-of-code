@@ -1,3 +1,7 @@
+from utils import timeit
+
+
+@timeit
 def part_1(answers):
     total = 0
     for group in answers:
@@ -5,9 +9,10 @@ def part_1(answers):
         for answer in group[1:]:
             group_answer |= set(answer)
         total += len(group_answer)
-    print(total)
+    return total
 
 
+@timeit
 def part_2(answers):
     total = 0
     for group in answers:
@@ -15,25 +20,27 @@ def part_2(answers):
         for answer in group[1:]:
             group_answer &= set(answer)
         total += len(group_answer)
-    print(total)
+    return total
 
 
+@timeit
 def scan_answers(input_file):
+    groups = []
     group = []
     for line in input_file:
         if line.isspace():
-            yield group
+            groups.append(group)
             group = []
         else:
             group.append(line.strip())
-    yield group
+    groups.append(group)
+    return groups
 
 
 def main():
     with open('input.txt') as input_file:
-        answers = list(scan_answers(input_file))
+        answers = scan_answers(input_file)
 
-    print(answers)
     part_1(answers)
     part_2(answers)
 

@@ -1,3 +1,6 @@
+from utils import timeit
+
+
 def execute(program):
     executed = set()
     accumulator = 0
@@ -19,11 +22,13 @@ def execute(program):
     return accumulator, ip
 
 
+@timeit
 def part_1(program):
     accumulator, _ = execute(program)
-    print(accumulator)
+    return accumulator
 
 
+@timeit
 def part_2(program):
     for ip, (op, value) in enumerate(program):
         if op == 'acc':
@@ -33,10 +38,11 @@ def part_2(program):
             program[ip] = ('nop' if op == 'jmp' else 'jmp', value)
             accumulator, ip_ = execute(program)
             if ip_ >= len(program):
-                print(accumulator)
+                return accumulator
             program[ip] = instruction
 
 
+@timeit
 def get_program(input_file):
     program = []
     for line in input_file:
@@ -49,7 +55,6 @@ def main():
     with open('input.txt') as input_file:
         program = get_program(input_file)
 
-    print(program)
     part_1(program)
     part_2(program)
 

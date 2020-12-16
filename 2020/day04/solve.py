@@ -1,6 +1,9 @@
 import re
 
+from utils import timeit
 
+
+@timeit
 def part_1(passports):
     needed_keys = {'byr',
                    'iyr',
@@ -11,10 +14,10 @@ def part_1(passports):
                    'pid',
                    # 'cid',
                    }
-    valid_count = sum(1 for passport in passports if needed_keys <= passport.keys())
-    print(valid_count)
+    return sum(1 for passport in passports if needed_keys <= passport.keys())
 
 
+@timeit
 def part_2(passports):
     needed_keys = {'byr': lambda s: re.fullmatch(r'\d{4}', s) and (1920 <= int(s) <= 2002),
                    'iyr': lambda s: re.fullmatch(r'\d{4}', s) and (2010 <= int(s) <= 2020),
@@ -26,11 +29,11 @@ def part_2(passports):
                    'pid': lambda s: re.fullmatch(r'\d{9}', s),
                    # 'cid': lambda s: True,
                    }
-    valid_count = sum(1 for passport in passports if
-                      all(key in passport and needed_keys[key](passport[key]) for key in needed_keys.keys()))
-    print(valid_count)
+    return sum(1 for passport in passports if
+               all(key in passport and needed_keys[key](passport[key]) for key in needed_keys.keys()))
 
 
+@timeit
 def scan_passports(input_file):
     passports, passport = [], {}
 
@@ -53,7 +56,6 @@ def main():
     with open('input.txt') as input_file:
         passports = scan_passports(input_file)
 
-    print(passports)
     part_1(passports)
     part_2(passports)
 

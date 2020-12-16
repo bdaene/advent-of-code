@@ -1,9 +1,14 @@
+from utils import timeit
+
+
+@timeit
 def part_1(data, k=25):
     for i, s in enumerate(data[k:], k):
         if not any(s - a in data[j:i] for j, a in enumerate(data[i - k:i], i - k)):
             return s
 
 
+@timeit
 def part_1_bis(data, k=25):
     for i, s in enumerate(data[k:], k):
         seen, valid = set(), False
@@ -16,6 +21,7 @@ def part_1_bis(data, k=25):
             return s
 
 
+@timeit
 def part_2(data):
     target = part_1(data)
 
@@ -26,6 +32,7 @@ def part_2(data):
                 print(min(data[i:j + 1]) + max(data[i:j + 1]))
 
 
+@timeit
 def part_2_bis(data):
     target = part_1_bis(data)
 
@@ -46,8 +53,8 @@ def main():
         data = list(map(int, input_file.readlines()))
 
     print(data)
-    print(part_1_bis(data))
-    print(part_2_bis(data))
+    part_1_bis(data)
+    part_2_bis(data)
 
 
 if __name__ == "__main__":

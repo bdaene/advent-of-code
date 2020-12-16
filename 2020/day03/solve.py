@@ -1,3 +1,7 @@
+from utils import timeit
+
+
+@timeit
 def part_1(trees):
     position = 0
     count = 0
@@ -5,9 +9,10 @@ def part_1(trees):
         position += 3
         if line[position % len(line)] == '#':
             count += 1
-    print(count)
+    return count
 
 
+@timeit
 def part_2(trees):
     slopes = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]
     counts = []
@@ -24,7 +29,7 @@ def part_2(trees):
         total *= count
 
     print(counts)
-    print(total)
+    return total
 
 
 def main():

@@ -1,23 +1,25 @@
 import re
 from collections import Counter
 
+from utils import timeit
 
+
+@timeit
 def part_1(rules, passwords):
     count = 0
     for (a, b, c), password in zip(rules, passwords):
         if a <= Counter(password)[c] <= b:
             count += 1
+    return count
 
-    print(count)
 
-
+@timeit
 def part_2(rules, passwords):
     count = 0
     for (a, b, c), password in zip(rules, passwords):
         if (password[a - 1] == c) != (password[b - 1] == c):
             count += 1
-
-    print(count)
+    return count
 
 
 def main():

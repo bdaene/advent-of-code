@@ -1,7 +1,10 @@
 import re
 from collections import defaultdict
 
+from utils import timeit
 
+
+@timeit
 def part_1(bags):
     parents = defaultdict(set)
     for out_bag, other_bags in bags.items():
@@ -17,16 +20,18 @@ def part_1(bags):
             if out_bag not in seen_bags:
                 stack.append(out_bag)
 
-    print(len(seen_bags) - 1)
+    return len(seen_bags) - 1
 
 
+@timeit
 def part_2(bags):
     def size(out_bag):
         return sum(count * (1 + size(in_bag)) for count, in_bag in bags[out_bag])
 
-    print(size(('shiny', 'gold')))
+    return size(('shiny', 'gold'))
 
 
+@timeit
 def scan_bags(input_file):
     bags = {}
     bag_pattern = re.compile(r'(\d+ )?(\w+) (\w+) bags?')
@@ -52,7 +57,6 @@ def main():
     with open('input.txt') as input_file:
         bags = scan_bags(input_file)
 
-    print(bags)
     part_1(bags)
     part_2(bags)
 
