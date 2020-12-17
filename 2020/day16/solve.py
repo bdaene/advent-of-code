@@ -1,5 +1,4 @@
 import re
-from collections import defaultdict
 
 from utils import timeit
 
@@ -50,35 +49,34 @@ def part_1(data):
 @timeit
 def part_2(data):
     rules, tickets = data
+    nb_fields = len(tickets[0])
 
-    valid_tickets = []
-    for ticket in tickets:
-        if all(any(a <= value <= b or c <= value <= d for a, b, c, d in rules.values()) for value in ticket):
-            valid_tickets.append(ticket)
+    rules = {name: frozenset(range(a, b + 1)) | frozenset(range(c, d + 1)) for name, (a, b, c, d) in
+             rules.items()}
 
-    fields_values = [set() for _ in tickets[0]]
-    for ticket in valid_tickets:
-        for i, value in enumerate(ticket):
-            fields_values[i].add(value)
+    allowed_values = set()
+    for rule, values in rules.items():
+        allowed_values |= values
+    valid_tickets = {ticket for ticket in tickets[1:] if all(value in allowed_values for value in ticket)}
+    fields_values = [set(ticket[i] for ticket in valid_tickets) for i in range(nb_fields)]
 
-    matching_fields = defaultdict(set)
-    for rule, (a, b, c, d) in rules.items():
-        for field, values in enumerate(fields_values):
-            if all(a <= value <= b or c <= value <= d for value in values):
-                matching_fields[rule].add(field)
+    matching_fields = {
+        name: set(field for field, field_values in enumerate(fields_values) if field_values <= rule_values)
+        for name, rule_values in rules.items()}
 
     rules_field = {}
-    while len(matching_fields) > 0:
-        for rule, fields in matching_fields.items():
-            if len(fields) == 0:
-                raise RuntimeError(f"No fields available for rule {rule}.")
-            elif len(fields) == 1:
-                field = fields.pop()
-                del matching_fields[rule]
-                rules_field[rule] = field
-                for fields_ in matching_fields.values():
-                    fields_.discard(field)
-                break
+    rules = sorted(matching_fields, key=lambda r: len(matching_fields[r]))
+    for i, rule in enumerate(rules):
+        fields = matching_fields[rule]
+        if len(fields) == 0:
+            raise RuntimeError(f"No fields available for rule {rule}.")
+        elif len(fields) == 1:
+            field = fields.pop()
+            rules_field[rule] = field
+            for rule_ in rules[i + 1:]:
+                matching_fields[rule_].discard(field)
+        else:
+            raise RuntimeError(f"Multiple possibilities for rule {rule}.")
 
     total = 1
     for rule, field in rules_field.items():
