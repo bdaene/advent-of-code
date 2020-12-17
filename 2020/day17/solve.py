@@ -73,21 +73,19 @@ def part_2(grid, cycles=6):
             if cell == '#':
                 sky[cycles + x, cycles + y, cycles, cycles] = True
 
+    offsets_x, offsets_y, offsets_z, offsets_w = [
+        ((slice(0, sky.shape[d] - 1), slice(1, sky.shape[d])),
+         (slice(0, sky.shape[d]), slice(0, sky.shape[d])),
+         (slice(1, sky.shape[d]), slice(0, sky.shape[d] - 1)))
+        for d in range(4)]
+
     for _ in range(cycles):
         count = numpy.zeros(sky.shape, dtype=int)
 
-        for xl, xr in ((slice(0, sky.shape[0] - 1), slice(1, sky.shape[0])),
-                       (slice(0, sky.shape[0]), slice(0, sky.shape[0])),
-                       (slice(1, sky.shape[0]), slice(0, sky.shape[0] - 1))):
-            for yl, yr in ((slice(0, sky.shape[1] - 1), slice(1, sky.shape[1])),
-                           (slice(0, sky.shape[1]), slice(0, sky.shape[1])),
-                           (slice(1, sky.shape[1]), slice(0, sky.shape[1] - 1))):
-                for zl, zr in ((slice(0, sky.shape[2] - 1), slice(1, sky.shape[2])),
-                               (slice(0, sky.shape[2]), slice(0, sky.shape[2])),
-                               (slice(1, sky.shape[2]), slice(0, sky.shape[2] - 1))):
-                    for wl, wr in ((slice(0, sky.shape[3] - 1), slice(1, sky.shape[3])),
-                                   (slice(0, sky.shape[3]), slice(0, sky.shape[3])),
-                                   (slice(1, sky.shape[3]), slice(0, sky.shape[3] - 1))):
+        for xl, xr in offsets_x:
+            for yl, yr in offsets_y:
+                for zl, zr in offsets_z:
+                    for wl, wr in offsets_w:
                         count[xl, yl, zl, wl] += sky[xr, yr, zr, wr]
 
         count -= sky
