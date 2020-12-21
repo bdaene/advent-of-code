@@ -1,59 +1,53 @@
 from collections import defaultdict
 
 import numpy
+from matplotlib import pyplot
 from utils import timeit
 
 
 @timeit
-def get_data():
+def get_data(tile_size=10):
     with open('input.txt') as input_file:
         tiles = {}
-        current_tile = []
+        current_tile = numpy.full((tile_size, tile_size), '.')
+        row = 0
         tile_id = None
 
         for line in input_file:
             if line.isspace():
-                tiles[tile_id] = tuple(current_tile)
-                current_tile = []
+                tiles[tile_id] = current_tile
+                current_tile = numpy.full((tile_size, tile_size), '.')
+                row = 0
             elif line.startswith('Tile'):
                 tile_id = int(line[5:-2])
             else:
-                current_tile.append(line.strip())
+                current_tile[row, :] = tuple(line.strip())
+                row += 1
 
-        if len(current_tile) > 0:
-            tiles[tile_id] = tuple(current_tile)
+        if row == tile_size:
+            tiles[tile_id] = current_tile
     return tiles
 
 
-def get_border_key(border):
-    border = border.replace('#', '1').replace('.', '0')
-    return min(int(border), int(border[::-1]))
-
-
-def get_borders(tile):
-    top = tile[0]
-    bottom = tile[-1]
-    left = ''.join(line[0] for line in tile)
-    right = ''.join(line[-1] for line in tile)
-    return top, bottom, left, right
-
-
 def get_tiles_matches(tiles):
-    borders_tiles = defaultdict(set)
-    tiles_borders = {}
-    for tile_id, tile in tiles.items():
-        borders = get_borders(tile)
-        tiles_borders[tile_id] = borders
+    def get_key(border):
+        border = ''.join(border).replace('.', '0').replace('#', '1')
+        return min(int(border), int(border[::-1]))
 
-        for border in borders:
-            borders_tiles[get_border_key(border)].add(tile_id)
+    borders_tiles = defaultdict(set)
+    for tile_id, tile in tiles.items():
+        borders_tiles[get_key(tile[0, :])].add(tile_id)
+        borders_tiles[get_key(tile[-1, :])].add(tile_id)
+        borders_tiles[get_key(tile[:, 0])].add(tile_id)
+        borders_tiles[get_key(tile[:, -1])].add(tile_id)
 
     tile_matches = defaultdict(set)
-    for border, tiles_ in borders_tiles.items():
-        if len(tiles_) == 2:
-            a, b = tiles_
-            tile_matches[a].add(b)
-            tile_matches[b].add(a)
+    for matching_tiles in borders_tiles.values():
+        for tile in sorted(matching_tiles):
+            matching_tiles.remove(tile)
+            for tile_ in matching_tiles:
+                tile_matches[tile].add(tile_)
+                tile_matches[tile_].add(tile)
 
     return tile_matches
 
@@ -73,86 +67,29 @@ def part_1(tiles):
 def part_2(tiles):
     tile_matches = get_tiles_matches(tiles)
 
-    tiles_ = {}
-    for tile_id, tile in tiles.items():
-        tile_ = numpy.zeros((len(tile), len(tile[0])), dtype=str)
-        for i in range(len(tile)):
-            for j in range(len(tile[0])):
-                tile_[i, j] = tile[i][j]
-        tiles_[tile_id] = tile_
-    tiles = tiles_
+    def gen_orientations(tile):
+        for _ in range(4):
+            yield tile
+            yield numpy.flipud(tile)
+            tile = numpy.rot90(tile)
 
-    def get_match_bottom(tile):
-        bottom_border = tiles[tile][-1, :]
-        for tile_id in tile_matches[tile]:
-            tile_ = tiles[tile_id]
-            if (bottom_border == tile_[0, :]).all():
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
-            if (bottom_border == tile_[-1, :]).all():
-                tiles[tile_id] = numpy.flipud(tile_)
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
-            if (bottom_border == tile_[:, 0]).all():
-                tiles[tile_id] = numpy.flipud(numpy.rot90(tile_))
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
-            if (bottom_border == tile_[:, -1]).all():
-                tiles[tile_id] = numpy.rot90(tile_)
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
-            if (bottom_border == tile_[0, ::-1]).all():
-                tiles[tile_id] = numpy.fliplr(tile_)
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
-            if (bottom_border == tile_[-1, ::-1]).all():
-                tiles[tile_id] = numpy.rot90(tile_, 2)
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
-            if (bottom_border == tile_[::-1, 0]).all():
-                tiles[tile_id] = numpy.rot90(tile_, 3)
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
-            if (bottom_border == tile_[::-1, -1]).all():
-                tiles[tile_id] = numpy.fliplr(numpy.rot90(tile_))
-                assert (tiles[tile][-1, :] == tiles[tile_id][0, :]).all()
-                return tile_id
+    def get_match_bottom(tile_id):
+        tile = tiles[tile_id]
+        for tile_id_ in tile_matches[tile_id]:
+            tile_ = tiles[tile_id_]
+            for orientation in gen_orientations(tile_):
+                if (tile[-1, :] == orientation[0, :]).all():
+                    tiles[tile_id_] = orientation
+                    return tile_id_
 
-    def get_match_right(tile):
-        right_border = tiles[tile][:, -1]
-        for tile_id in tile_matches[tile]:
-            tile_ = tiles[tile_id]
-            if (right_border == tile_[:, 0]).all():
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
-            if (right_border == tile_[:, -1]).all():
-                tiles[tile_id] = numpy.fliplr(tile_)
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
-            if (right_border == tile_[0, :]).all():
-                tiles[tile_id] = numpy.flipud(numpy.rot90(tile_))
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
-            if (right_border == tile_[-1, :]).all():
-                tiles[tile_id] = numpy.rot90(tile_, 3)
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
-            if (right_border == tile_[::-1, 0]).all():
-                tiles[tile_id] = numpy.flipud(tile_)
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
-            if (right_border == tile_[::-1, -1]).all():
-                tiles[tile_id] = numpy.rot90(tile_, 2)
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
-            if (right_border == tile_[0, ::-1]).all():
-                tiles[tile_id] = numpy.rot90(tile_)
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
-            if (right_border == tile_[-1, ::-1]).all():
-                tiles[tile_id] = numpy.fliplr(numpy.rot90(tile_))
-                assert (tiles[tile][:, -1] == tiles[tile_id][:, 0]).all()
-                return tile_id
+    def get_match_right(tile_id):
+        tile = tiles[tile_id]
+        for tile_id_ in tile_matches[tile_id]:
+            tile_ = tiles[tile_id_]
+            for orientation in gen_orientations(tile_):
+                if (tile[:, -1] == orientation[:, 0]).all():
+                    tiles[tile_id_] = orientation
+                    return tile_id_
 
     corners = [tile_id for tile_id, matches in tile_matches.items() if len(matches) == 2]
     corner = corners[0]
@@ -182,26 +119,29 @@ def part_2(tiles):
         for j, tile in enumerate(line):
             image[i * height:(i + 1) * height, j * width:(j + 1) * width] = tiles[puzzle[i][j]][1:-1, 1:-1]
 
-    monster = numpy.zeros((3, 20), dtype=str)
-    with open('monster.txt') as monster_file:
-        for i, line in enumerate(monster_file):
-            for j, c in enumerate(line[:-1]):
-                monster[i, j] = c
-    monster[monster != '#'] = '.'
+    monster = numpy.full((3, 20), ' ')
+    monster[0, :] = tuple('                  # ')
+    monster[1, :] = tuple('#    ##    ##    ###')
+    monster[2, :] = tuple(' #  #  #  #  #  #   ')
 
     def search(monster, image):
         height, width = monster.shape
         for i in range(image.shape[0] - height + 1):
             for j in range(image.shape[1] - width + 1):
                 view = image[i:i + height, j:j + width]
-                if ((monster == '.') | (view != '.')).all():
+                if ((monster != '#') | (view == '#')).all():
                     view[monster == '#'] = 'O'
 
-    for _ in range(4):
-        search(monster, image)
-        monster = numpy.flipud(monster)
-        search(monster, image)
-        monster = numpy.rot90(numpy.flipud(monster))
+    for orientation in gen_orientations(monster):
+        search(orientation, image)
+
+    image = numpy.rot90(image, 3)
+    image_ = numpy.zeros(image.shape + (3,), dtype=numpy.uint8)
+    image_[image == '.', :] = (0, 127, 255)
+    image_[image == '#', :] = (0, 63, 127)
+    image_[image == 'O', :] = (255, 0, 0)
+    pyplot.imshow(image_)
+    pyplot.show()
 
     return (image == '#').sum()
 
