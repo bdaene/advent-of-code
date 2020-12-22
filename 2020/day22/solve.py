@@ -44,14 +44,15 @@ def part_1(decks):
 
 @timeit
 def part_2(decks):
-    def play(deck1, deck2):
+    def play(deck1, deck2, first_game):
+        if max(deck1) > max(deck2) and not first_game:
+            return True, None
 
         seen_decks = set()
-
         while len(deck1) > 0 and len(deck2) > 0:
             key = (deck1, deck2)
             if key in seen_decks:
-                return key[0] + key[1], ()
+                return True, None
             seen_decks.add(key)
 
             card1 = deck1[0]
@@ -60,22 +61,18 @@ def part_2(decks):
             deck2 = deck2[1:]
 
             if len(deck1) >= card1 and len(deck2) >= card2:
-                sub_game = play(deck1[:card1], deck2[:card2])
-                if len(sub_game[0]) > 0:
-                    deck1 += (card1, card2)
-                else:
-                    deck2 += (card2, card1)
+                p1_win, cards = play(deck1[:card1], deck2[:card2], False)
             else:
-                if card1 > card2:
-                    deck1 += (card1, card2)
-                else:
-                    deck2 += (card2, card1)
+                p1_win = card1 > card2
 
-        return deck1, deck2
+            if p1_win:
+                deck1 += (card1, card2)
+            else:
+                deck2 += (card2, card1)
 
-    game1 = play(*decks)
+        return len(deck1) > 0, deck1 if len(deck1) > 0 else deck2
 
-    deck = game1[0] if len(game1[0]) > 0 else game1[1]
+    game1, deck = play(*decks, True)
 
     return sum((len(deck) - i) * card for i, card in enumerate(deck))
 
