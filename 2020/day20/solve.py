@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 import numpy
 from matplotlib import pyplot
@@ -29,43 +29,46 @@ def get_data(tile_size=10):
     return tiles
 
 
-def get_tiles_matches(tiles):
-    def get_key(border):
-        border = ''.join(border).replace('.', '0').replace('#', '1')
-        return min(int(border), int(border[::-1]))
+def get_key(border):
+    border = ''.join(border).replace('.', '0').replace('#', '1')
+    return min(int(border), int(border[::-1]))
 
+
+def get_borders(tiles):
     borders_tiles = defaultdict(set)
     for tile_id, tile in tiles.items():
         borders_tiles[get_key(tile[0, :])].add(tile_id)
         borders_tiles[get_key(tile[-1, :])].add(tile_id)
         borders_tiles[get_key(tile[:, 0])].add(tile_id)
         borders_tiles[get_key(tile[:, -1])].add(tile_id)
+    return borders_tiles
 
-    tile_matches = defaultdict(set)
-    for matching_tiles in borders_tiles.values():
-        for tile in sorted(matching_tiles):
-            matching_tiles.remove(tile)
-            for tile_ in matching_tiles:
-                tile_matches[tile].add(tile_)
-                tile_matches[tile_].add(tile)
 
-    return tile_matches
+def gen_corners(borders_tiles):
+    adjacent_tiles_count = Counter()
+
+    for tiles in borders_tiles.values():
+        for tile in tiles:
+            adjacent_tiles_count[tile] += len(tiles) - 1
+
+    for tile_id, count in adjacent_tiles_count.items():
+        if count == 2:
+            yield tile_id
 
 
 @timeit
 def part_1(tiles):
-    tile_matches = get_tiles_matches(tiles)
+    borders_tiles = get_borders(tiles)
 
     total = 1
-    for tile_id, matches in tile_matches.items():
-        if len(matches) == 2:
-            total *= tile_id
+    for tile_id in gen_corners(borders_tiles):
+        total *= tile_id
     return total
 
 
 @timeit
 def part_2(tiles):
-    tile_matches = get_tiles_matches(tiles)
+    borders_tiles = get_borders(tiles)
 
     def gen_orientations(tile):
         for _ in range(4):
@@ -74,25 +77,30 @@ def part_2(tiles):
             tile = numpy.rot90(tile)
 
     def get_match_bottom(tile_id):
-        tile = tiles[tile_id]
-        for tile_id_ in tile_matches[tile_id]:
-            tile_ = tiles[tile_id_]
-            for orientation in gen_orientations(tile_):
-                if (tile[-1, :] == orientation[0, :]).all():
-                    tiles[tile_id_] = orientation
-                    return tile_id_
+        bottom_border = tiles[tile_id][-1, :]
+        try:
+            adjacent_tile_id = tuple(borders_tiles[get_key(bottom_border)] - {tile_id})[0]
+        except IndexError:
+            return None
+        adjacent_tile = tiles[adjacent_tile_id]
+        for orientation in gen_orientations(adjacent_tile):
+            if (bottom_border == orientation[0, :]).all():
+                tiles[adjacent_tile_id] = orientation
+                return adjacent_tile_id
 
     def get_match_right(tile_id):
-        tile = tiles[tile_id]
-        for tile_id_ in tile_matches[tile_id]:
-            tile_ = tiles[tile_id_]
-            for orientation in gen_orientations(tile_):
-                if (tile[:, -1] == orientation[:, 0]).all():
-                    tiles[tile_id_] = orientation
-                    return tile_id_
+        right_border = tiles[tile_id][:, -1]
+        try:
+            adjacent_tile_id = tuple(borders_tiles[get_key(right_border)] - {tile_id})[0]
+        except IndexError:
+            return None
+        adjacent_tile = tiles[adjacent_tile_id]
+        for orientation in gen_orientations(adjacent_tile):
+            if (right_border == orientation[:, 0]).all():
+                tiles[adjacent_tile_id] = orientation
+                return adjacent_tile_id
 
-    corners = [tile_id for tile_id, matches in tile_matches.items() if len(matches) == 2]
-    corner = corners[0]
+    corner = next(gen_corners(borders_tiles))
 
     if get_match_bottom(corner) is None:
         tiles[corner] = numpy.flipud(tiles[corner])
@@ -119,21 +127,19 @@ def part_2(tiles):
         for j, tile in enumerate(line):
             image[i * height:(i + 1) * height, j * width:(j + 1) * width] = tiles[puzzle[i][j]][1:-1, 1:-1]
 
-    monster = numpy.full((3, 20), ' ')
-    monster[0, :] = tuple('                  # ')
-    monster[1, :] = tuple('#    ##    ##    ###')
-    monster[2, :] = tuple(' #  #  #  #  #  #   ')
+    monster = ['                  # ',
+               '#    ##    ##    ###',
+               ' #  #  #  #  #  #   ']
+    monster_coord = tuple(
+        (row, col) for row, line in enumerate(monster) for col, cell in enumerate(line) if cell == '#')
 
-    def search(monster, image):
-        height, width = monster.shape
-        for i in range(image.shape[0] - height + 1):
-            for j in range(image.shape[1] - width + 1):
-                view = image[i:i + height, j:j + width]
-                if ((monster != '#') | (view == '#')).all():
-                    view[monster == '#'] = 'O'
-
-    for orientation in gen_orientations(monster):
-        search(orientation, image)
+    # for orientation in (numpy.rot90(image, 3),):
+    for orientation in gen_orientations(image):
+        for row in range(orientation.shape[0] - 2):
+            for col in range(orientation.shape[1] - 19):
+                if all(orientation[row + r, col + c] != '.' for r, c in monster_coord):
+                    for r, c in monster_coord:
+                        orientation[row + r, col + c] = 'O'
 
     image = numpy.rot90(image, 3)
     image_ = numpy.zeros(image.shape + (3,), dtype=numpy.uint8)
