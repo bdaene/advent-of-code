@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import Counter
 
 from utils import timeit
 
@@ -19,11 +19,11 @@ def part_1(adaptors):
 
 @timeit
 def part_2(adaptors):
-    ways = defaultdict(int)
+    ways = [0] * (adaptors[-1] + 1)
     ways[0] = 1
 
     for adaptor in adaptors:
-        ways[adaptor] = sum(ways[joltage] for joltage in range(adaptor - 3, adaptor))
+        ways[adaptor] = ways[adaptor - 3] + ways[adaptor - 2] + ways[adaptor - 1]
 
     return ways[adaptors[-1]]
 
