@@ -2,7 +2,9 @@ from utils import timeit
 
 
 def play(cups, nb_cups, moves):
-    next_cup = {a: b for a, b in zip(cups, cups[1:])}
+    next_cup = [0] * (nb_cups + 1)
+    for a, b in zip(cups, cups[1:]):
+        next_cup[a] = b
     last_cup = cups[-1]
     for cup in range(len(cups) + 1, nb_cups + 1):
         next_cup[last_cup] = cup
