@@ -43,18 +43,49 @@ def part_1(decks):
     return sum((len(deck) - i) * card for i, card in enumerate(deck))
 
 
+def will_loop(deck1, deck2):
+    if deck1[0] < deck2[0]:
+        deck1, deck2 = deck2, deck1
+    # Test if (deck1, deck2) are of style ((AB)+, B(BA)*)
+    if len(deck1) % 2 != 0 or len(deck2) % 2 != 1:
+        return False
+    max_b = deck2[0]
+    min_a = deck1[0]
+    even = True
+    for c in deck1:
+        if even:
+            min_a = min(min_a, c)
+        else:
+            max_b = max(max_b, c)
+        even = not even
+    even = False
+    for c in deck2:
+        if even:
+            min_a = min(min_a, c)
+        else:
+            max_b = max(max_b, c)
+        even = not even
+
+    return min_a > max_b and min_a >= max(len(deck1), len(deck2))
+
+
 @timeit
 def part_2(decks):
     def play(deck1, deck2, first_game):
-        if max(deck1) > max(deck2) and not first_game:
-            return True, None
+        # if max(deck1) > max(deck2) and not first_game:
+        #     return True, None
 
         seen_decks = set()
         # key = sum(1 << a for a in deck1)
         key = 0
         while len(deck1) > 0 and len(deck2) > 0:
             if key in seen_decks:
+                # print(deck1, deck2)
                 return True, None
+            # elif will_loop(deck1, deck2):
+            #     print(deck1, deck2)
+            #     return True, None
+
             seen_decks.add(key)
 
             card1 = deck1.popleft()
@@ -76,6 +107,7 @@ def part_2(decks):
                 deck2.append(card1)
                 key -= 1 << card1
 
+        # print(deck1, deck2)
         return len(deck1) > 0, deck1 if len(deck1) > 0 else deck2
 
     game1, deck = play(deque(decks[0]), deque(decks[1]), True)
