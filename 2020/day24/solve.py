@@ -52,17 +52,18 @@ def get_array(black_tiles, size=512):
     y_max = max(abs(c.imag) for c in coordinates)
 
     radius = size / 4 / (max(x_max, y_max) + 1)
+    f = 2 / 3 ** 0.5
 
     array = numpy.full((3, size, size), 255, dtype=numpy.uint8)
     for c in coordinates:
         c *= radius * 2
         for x in range(int(c.real - radius), int(c.real)):
-            for y in range(int(c.imag - radius + (c.real - x) / 2) - 1,
-                           int(c.imag + radius - (c.real - x) / 2) + 1):
+            for y in range(int(c.imag - (radius - (c.real - x) / 2) * f),
+                           int(c.imag + (radius - (c.real - x) / 2) * f) + 1):
                 array[:, y + size // 2, x + size // 2] = (0, 0, 0)
         for x in range(int(c.real), int(c.real + radius) + 1):
-            for y in range(int(c.imag - radius + (x - c.real) / 2) - 1,
-                           int(c.imag + radius - (x - c.real) / 2) + 1):
+            for y in range(int(c.imag - (radius - (x - c.real) / 2) * f),
+                           int(c.imag + (radius - (x - c.real) / 2) * f) + 1):
                 array[:, y + size // 2, x + size // 2] = (0, 0, 0)
 
     return array
@@ -77,7 +78,7 @@ def part_1(instructions):
 @timeit
 def part_2(instructions, nb_days=100):
     black_tiles = apply(instructions)
-    images = []
+    images = [get_array(black_tiles)] * 10
 
     for _ in range(nb_days):
         counts = Counter()
@@ -96,7 +97,7 @@ def part_2(instructions, nb_days=100):
         images.append(get_array(black_tiles))
         # print(Counter(black_tiles.values())[True])
 
-    write_gif([images[0] * 10] + images + [images[-1]] * 10, 'day24.gif')
+    write_gif(images + [images[-1]] * 10, 'day24.gif')
     return Counter(black_tiles.values())[True]
 
 
