@@ -15,21 +15,14 @@ def get_keys():
 @timeit
 def part_1(keys, seed=7, mod=20201227):
     key_a, key_b = keys
-    loop_a = loop_b = None
 
     loop, key = 0, 1
-    while loop_a is None or loop_b is None:
-        if key == key_a:
-            loop_a = loop
-        if key == key_b:
-            loop_b = loop
-
-        key *= seed
-        key %= mod
+    while key != key_b:
+        key = (seed * key) % mod
         loop += 1
 
-    print(loop_a, loop_b)
-    return pow(7, loop_a * loop_b, 20201227)
+    print(loop)
+    return pow(key_a, loop, 20201227)
 
 
 def pollard_rho_log(alpha, beta, mod):
@@ -57,17 +50,17 @@ def pollard_rho_log(alpha, beta, mod):
 
     db = (b_h - b_t) % phi
     da = (a_t - a_h) % phi
-    g = gcd(phi, gcd(db, da))
-    db //= g
-    da //= g
-    phi //= g
+    d = gcd(phi, gcd(db, da))
+    db //= d
+    da //= d
+    phi //= d
 
     inv_db = inv_mod(db, phi)
     if inv_db is None:
         return None
 
     gamma = inv_db * da % phi
-    for _ in range(g):
+    for _ in range(d):
         if beta == pow(alpha, gamma, mod):
             return gamma
         gamma += phi
@@ -78,11 +71,8 @@ def pollard_rho_log(alpha, beta, mod):
 @timeit
 def part_1_fast(keys, seed=7, mod=20201227):
     key_a, key_b = keys
-    loop_a = pollard_rho_log(seed, key_a, mod)
     loop_b = pollard_rho_log(seed, key_b, mod)
-
-    print(loop_a, loop_b)
-    return pow(seed, loop_a * loop_b, mod)
+    return pow(key_a, loop_b, mod)
 
 
 def main():
