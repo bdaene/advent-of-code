@@ -61,10 +61,39 @@ def part_2(data):
     return int(oxygen_generator_rating, 2) * int(co2_scrubber_rating, 2)
 
 
+def search(filter_function, data):
+    numbers = set(data)
+    i = 0
+    while len(numbers) > 1:
+        numbers_bit = {'0': set(), '1': set()}
+        for number in numbers:
+            numbers_bit[number[i]].add(number)
+
+        numbers = filter_function(numbers_bit)
+        i += 1
+
+    return numbers.pop()
+
+
+@timeit
+def part_2_bis(data):
+    def oxygen_generator_criteria(numbers_bit):
+        return numbers_bit['1'] if len(numbers_bit['1']) >= len(numbers_bit['0']) else numbers_bit['0']
+
+    def co2_scrubber_criteria(numbers_bit):
+        return numbers_bit['0'] if len(numbers_bit['0']) <= len(numbers_bit['1']) else numbers_bit['1']
+
+    oxygen_generator_rating = search(oxygen_generator_criteria, data)
+    co2_scrubber_rating = search(co2_scrubber_criteria, data)
+
+    return int(oxygen_generator_rating, 2) * int(co2_scrubber_rating, 2)
+
+
 def main():
     data = get_data()
     part_1(data)
     part_2(data)
+    part_2_bis(data)
 
 
 if __name__ == "__main__":
