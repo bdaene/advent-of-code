@@ -1,4 +1,3 @@
-from collections import Counter
 from utils import timeit
 
 
@@ -10,14 +9,15 @@ def get_data():
 
 @timeit
 def part_1(data, days=80):
-    counters = Counter(data)
-    for _ in range(days):
-        counters = {counter-1: number for counter, number in counters.items()}
-        if -1 in counters:
-            counters[8] = counters.pop(-1)
-            counters[6] = counters.get(6, 0) + counters[8]
+    count = [0]*(days+9)
+    for counter in data:
+        count[counter] += 1
 
-    return sum(counters.values())
+    for day in range(days):
+        count[day+9] = count[day]
+        count[day+7] += count[day]
+
+    return sum(count[days:])
 
 
 @timeit
