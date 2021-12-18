@@ -36,7 +36,7 @@ class Number:
     def __str__(self):
         if self.is_regular_number():
             return f'{self.magnitude}'
-        else :
+        else:
             return f'[{self.left},{self.right}]'
 
     def __add__(self, other):
