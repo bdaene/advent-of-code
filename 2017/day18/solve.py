@@ -23,7 +23,7 @@ class Program:
         self.instruction_pointer = 0
         self.instructions = instructions
         self.registers = defaultdict(int) if default_registers is None else default_registers
-        self.snd = Program.nop
+        self.snd = None
         self.queue = []
         self.queue_index = 0
         
@@ -66,26 +66,21 @@ class Program:
                 raise ValueError(f"Unknown instruction {(instruction, *values)}")
 
             self.instruction_pointer += 1
-        
-    @staticmethod
-    def nop(*args):
-        return 0
 
 
 @timeit
 def part_1(data):
 
-    current_sound = None
+    sounds = []
 
     def snd(val):
-        nonlocal current_sound
-        current_sound = val
+        sounds.append(val)
 
     program = Program(data)
     program.snd = snd
 
     program.run_until_wait()
-    return current_sound
+    return sounds[-1]
 
 
 @timeit
@@ -94,16 +89,11 @@ def part_2(data):
     program_0 = Program(data, default_registers={'p': 0})
     program_1 = Program(data, default_registers={'p': 1})
 
-    def get_snd(target_program):
-        def snd(val):
-            target_program.queue.append(val)
-        return snd
-
-    program_0.snd = get_snd(program_1)
-    program_1.snd = get_snd(program_0)
+    program_0.snd = lambda val: program_1.queue.append(val)
+    program_1.snd = lambda val: program_0.queue.append(val)
 
     program_0.run_until_wait()
-    while not program_1.queue_index >= len(program_1.queue):
+    while program_1.queue_index < len(program_1.queue):
         program_1.run_until_wait()
         program_0.run_until_wait()
 

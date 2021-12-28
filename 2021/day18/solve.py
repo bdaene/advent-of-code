@@ -15,8 +15,8 @@ class Number:
     def is_regular_number(self):
         return self.left is None and self.right is None
 
-    @staticmethod
-    def from_string(string):
+    @classmethod
+    def from_string(cls, string):
         stack = []
         value = None
         for c in string:
@@ -24,12 +24,12 @@ class Number:
                 value = (0 if value is None else value * 10) + int(c)
             else:
                 if value is not None:
-                    stack.append(Number(magnitude=value))
+                    stack.append(cls(magnitude=value))
                     value = None
                 if c == ']':
                     right = stack.pop()
                     left = stack.pop()
-                    stack.append(Number(left, right))
+                    stack.append(cls(left, right))
 
         return stack.pop()
 

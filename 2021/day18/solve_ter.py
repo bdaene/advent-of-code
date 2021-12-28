@@ -10,8 +10,8 @@ class Number:
     values: tuple[int, ...]
     depths: tuple[int, ...]
 
-    @staticmethod
-    def from_string(string):
+    @classmethod
+    def from_string(cls, string):
 
         def extract(number, depth=0):
             if isinstance(number, int):
@@ -22,7 +22,7 @@ class Number:
                 right_values, right_depths = extract(right, depth + 1)
                 return left_values + right_values, left_depths + right_depths
 
-        return Number(*extract(json.loads(string)))
+        return cls(*extract(json.loads(string)))
 
     def __add__(self, other):
         values: list[int] = list(chain(self.values, other.values))

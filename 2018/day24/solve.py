@@ -19,9 +19,9 @@ class Group:
         self.army = None
         self.army_id = 0
 
-    @staticmethod
-    def from_string(string):
-        units, hit_points, traits, attack, attack_type, initiative = Group._pattern.match(string).groups()
+    @classmethod
+    def from_string(cls, string):
+        units, hit_points, traits, attack, attack_type, initiative = cls._pattern.match(string).groups()
         weaknesses, immunities = set(), set()
         if traits is not None:
             for trait in traits.split('; '):
@@ -29,7 +29,7 @@ class Group:
                     weaknesses |= set(trait[8:].split(', '))
                 elif trait.startswith('immune to '):
                     immunities |= set(trait[10:].split(', '))
-        return Group(int(units), int(hit_points), weaknesses, immunities, int(attack), attack_type, int(initiative))
+        return cls(int(units), int(hit_points), weaknesses, immunities, int(attack), attack_type, int(initiative))
 
     def __str__(self):
         return f"{self.army} group {self.army_id}"
