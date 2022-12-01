@@ -1,0 +1,4 @@
+name: advent-of-code
+dependencies:
+  - numpy
+  - python
