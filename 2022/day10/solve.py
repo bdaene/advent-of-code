@@ -39,13 +39,15 @@ def part_1(data):
 
 
 @timeit
-def part_2(data):
-    line = ""
+def part_2(data, width=40):
+    position, line = 0, ""
     for clock, x in execute(data):
-        line += '#' if -1 <= len(line)-x <= 1 else '.'
-        if len(line) == 40:
+        line += '██' if -1 <= position-x <= 1 else '  '
+        position += 1
+        if position == width:
             print(line)
             line = ""
+            position = 0
 
 
 def main():
