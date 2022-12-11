@@ -19,7 +19,7 @@ class Monkey:
 
 @timeit
 def get_data():
-    data = {}
+    monkeys = []
     with open('input.txt') as input_file:
         for line in input_file:
             monkey = Monkey(
@@ -34,19 +34,19 @@ def get_data():
                     re.fullmatch(r'If false: throw to monkey (\d+)', input_file.readline().strip()).group(1)),
             )
             input_file.readline()
-            data[monkey.index] = monkey
-    return data
+            monkeys.append(monkey)
+    return tuple(monkeys)
 
 
 @timeit
 def part_1(monkeys, nb_rounds=20, worry_relief=3):
     monkeys = deepcopy(monkeys)
     worry_modulo = 1
-    for monkey in monkeys.values():
+    for monkey in monkeys:
         worry_modulo *= monkey.divisibility_test // gcd(worry_modulo, monkey.divisibility_test)
 
     for _ in range(nb_rounds):
-        for monkey in monkeys.values():
+        for monkey in monkeys:
             for item in monkey.items:
                 item = monkey.operation(item) // worry_relief % worry_modulo
                 if item % monkey.divisibility_test == 0:
@@ -56,7 +56,7 @@ def part_1(monkeys, nb_rounds=20, worry_relief=3):
             monkey.items_inspected += len(monkey.items)
             monkey.items.clear()
 
-    a, b = sorted(monkey.items_inspected for monkey in monkeys.values())[-2:]
+    a, b = sorted(monkey.items_inspected for monkey in monkeys)[-2:]
     return a * b
 
 
