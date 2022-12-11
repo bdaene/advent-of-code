@@ -25,7 +25,7 @@ def get_data():
             monkey = Monkey(
                 index=int(re.fullmatch(r'Monkey (\d+):', line.strip()).group(1)),
                 items=list(map(int, input_file.readline().strip().split(': ')[-1].split(', '))),
-                operation=input_file.readline().strip().split(' = ')[-1],
+                operation=eval(f"lambda old: {input_file.readline().strip().split(' = ')[-1]}"),
                 divisibility_test=int(
                     re.fullmatch(r'Test: divisible by (\d+)', input_file.readline().strip()).group(1)),
                 monkey_if_true=int(
@@ -48,7 +48,7 @@ def part_1(monkeys, nb_rounds=20, worry_relief=3):
     for _ in range(nb_rounds):
         for monkey in monkeys.values():
             for item in monkey.items:
-                item = eval(monkey.operation, dict(old=item)) // worry_relief % worry_modulo
+                item = monkey.operation(item) // worry_relief % worry_modulo
                 if item % monkey.divisibility_test == 0:
                     monkeys[monkey.monkey_if_true].items.append(item)
                 else:
