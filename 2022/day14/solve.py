@@ -1,4 +1,5 @@
 import numpy
+from matplotlib import pyplot
 from utils import timeit
 
 
@@ -66,11 +67,13 @@ def part_1(paths, infinite_floor=False):
     while path:
         path = get_resting_place(path, grid)
         if not path:
-            return count
+            break
         x, y = path.pop()
         grid[x][y] = 'o'
         count += 1
 
+    pyplot.imshow(numpy.rot90(grid.view(numpy.uint32)))
+    pyplot.show()
     return count
 
 

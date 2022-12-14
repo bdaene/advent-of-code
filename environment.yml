@@ -1,4 +1,5 @@
 name: advent-of-code
 dependencies:
+  - matplotlib
   - numpy
   - python
