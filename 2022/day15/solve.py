@@ -1,39 +1,69 @@
 import re
+from itertools import combinations
+from typing import NamedTuple
 
 from matplotlib import pyplot
 from utils import timeit
 
 
+class Point(NamedTuple):
+    x: int
+    y: int
+
+    def get_distance(self, other):
+        return abs(other.x - self.x) + abs(other.y - self.y)
+
+    def get_corners(self, radius):
+        return (
+            Point(self.x - radius, self.y),
+            Point(self.x, self.y - radius),
+            Point(self.x + radius, self.y),
+            Point(self.x, self.y + radius),
+        )
+
+
+class Sensor(NamedTuple):
+    position: Point
+    radius: int
+
+
 @timeit
 def get_data():
-    data = []
+    sensors, beacons = set(), set()
     pattern = re.compile(r'Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)')
     with open('input.txt') as input_file:
         for line in input_file:
             sx, sy, bx, by = map(int, pattern.fullmatch(line.strip()).groups())
-            data.append(((sx, sy), (bx, by)))
-    return tuple(data)
+            beacon = Point(bx, by)
+            sensor_position = Point(sx, sy)
+            sensor = Sensor(sensor_position, sensor_position.get_distance(beacon))
+
+            beacons.add(beacon)
+            sensors.add(sensor)
+
+    return frozenset(sensors), frozenset(beacons)
 
 
-def show(data):
-    pyplot.plot([sx for (sx, sy), b in data], [sy for (sx, sy), b in data], '*')
-    pyplot.plot([bx for s, (bx, by) in data], [by for s, (bx, by) in data], '+')
+def show(sensors, beacons):
+    pyplot.plot([sensor.position.x for sensor in sensors], [sensor.position.y for sensor in sensors], '*')
+    pyplot.plot([beacon.x for beacon in beacons], [beacon.y for beacon in beacons], '+')
 
-    for (sx, sy), (bx, by) in data:
-        dist = abs(bx - sx) + abs(by - sy)
-        pyplot.fill([sx - dist, sx, sx + dist, sx, sx - dist], [sy, sy - dist, sy, sy + dist, sy], 'r-')
+    for sensor in sensors:
+        corners = sensor.position.get_corners(sensor.radius)
+        corners += corners[:1]
+        pyplot.fill(*zip(*corners), 'r-')
+        pyplot.plot(*zip(*corners), 'b-')
 
     pyplot.show()
 
 
-def get_impossible_ranges(data, y):
+def get_impossible_ranges(sensors, y):
     impossible_ranges = []
-    for (sx, sy), (bx, by) in data:
-        distance = abs(bx - sx) + abs(by - sy)
-        delta = distance - abs(y - sy)
+    for sensor in sensors:
+        delta = sensor.radius - abs(y - sensor.position.y)
         if delta < 0:
             continue
-        impossible_ranges.append((sx - delta, sx + delta))
+        impossible_ranges.append((sensor.position.x - delta, sensor.position.x + delta))
     return impossible_ranges
 
 
@@ -41,19 +71,22 @@ def get_gaps(ranges):
     gaps = []
     if not ranges:
         return gaps
+
     ranges.sort()
-    end = ranges[0][0]-1
+    end = ranges[0][0] - 1
     for left, right in ranges:
         if left > end + 1:
-            gaps.append((end+1, left-1))
+            gaps.append((end + 1, left - 1))
         end = max(end, right)
+
     return gaps
 
 
 @timeit
-def part_1(data, y=2000000):
-    impossible_ranges = get_impossible_ranges(data, y)
-    objects_on_line = set(s for s, b in data if s[1] == y) | set(b for s, b in data if b[1] == y)
+def part_1(sensors, beacons, y=2000000):
+    impossible_ranges = get_impossible_ranges(sensors, y)
+    objects_on_line = set(sensor.position.x for sensor in sensors if sensor.position.y == y)
+    objects_on_line |= set(beacon.x for beacon in beacons if beacon.y == y)
 
     gaps = get_gaps(impossible_ranges)
 
@@ -63,21 +96,60 @@ def part_1(data, y=2000000):
             )
 
 
+def get_common_border(sensor_a: Sensor, sensor_b: Sensor):
+    if sensor_a.position.get_distance(sensor_b.position) != sensor_a.radius + sensor_b.radius + 2:
+        return None
+
+    ax, bx = min(sensor_a.position.x, sensor_b.position.x), max(sensor_a.position.x, sensor_b.position.x)
+    ay, by = min(sensor_a.position.y, sensor_b.position.y), max(sensor_a.position.y, sensor_b.position.y)
+    corners = {corner
+               for corner in (sensor_a.position.get_corners(sensor_a.radius + 1)
+                              + sensor_b.position.get_corners(sensor_b.radius + 1))
+               if ax <= corner.x <= bx and ay <= corner.y <= by}
+
+    return tuple(sorted(corners))
+
+
+def get_intersection(border_a, border_b):
+    if border_a[1].y - border_a[0].y != border_a[1].x - border_a[0].x:
+        border_a, border_b = border_b, border_a
+    if border_b[1].y - border_b[0].y == border_b[1].x - border_b[0].x:
+        return None  # borders are parallel
+
+    x = (border_b[0].y - border_a[0].y + border_a[0].x + border_b[0].x) // 2
+    y = (border_b[0].x - border_a[0].x + border_a[0].y + border_b[0].y) // 2
+
+    if border_a[0].x <= x <= border_a[1].x and border_b[0].x <= x <= border_b[1].x:
+        return Point(x, y)
+
+
 @timeit
-def part_2(data, max_y=4000000):
-    for y in range(max_y+1):
-        gaps = get_gaps(get_impossible_ranges(data, y))
-        if gaps:
-            print(gaps, y)
-            for gap in gaps:
-                for x in range(gap[0], gap[1]+1):
-                    print(x * 4000000 + y)
+def part_2(sensors):
+    borders = set()
+    for sensor_a, sensor_b in combinations(sensors, 2):
+        if sensor_a.position.get_distance(sensor_b.position) == sensor_a.radius + sensor_b.radius + 2:
+            if border := get_common_border(sensor_a, sensor_b):
+                # print(border)
+                borders.add(border)
+                # pyplot.plot(*zip(*border), '-g')
+
+    positions = set()
+    for border_a, border_b in combinations(borders, 2):
+        if intersection := get_intersection(border_a, border_b):
+            if all(sensor.position.get_distance(intersection) > sensor.radius for sensor in sensors):
+                positions.add(intersection)
+
+    # print(positions)
+    position = positions.pop()
+    # pyplot.plot([position.x], [position.y], 'om')
+    return position.x * 4000000 + position.y
 
 
 def main():
-    data = get_data()
-    part_1(data)
-    part_2(data)
+    sensors, beacons = get_data()
+    part_1(sensors, beacons)
+    part_2(sensors)
+    # show(sensors, beacons)
 
 
 if __name__ == "__main__":
